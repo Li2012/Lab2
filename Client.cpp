@@ -130,12 +130,12 @@ int interpretDefinition(ConnectInfo &ci,string line){
 			  return -1;
 		  }
 		  char* v=new char[value.size()];
-		  strcpy(v,value.c_str());
-		  ci.addGameType(v);
+		  strcpy(v,formatLowercase(value).c_str());
 		  value = tokens[j+1];
 		  char* vv=new char[value.size()];
 		  strcpy(vv,value.c_str());
-		  ci.addGame(vv);
+		  gametype_game_pair game(v,vv);
+		  ci.addGame(game);
 		  i+=3;
 		  j+=3;
 		  //Lab2
@@ -204,9 +204,12 @@ int main(int argc, char* argv[])
 
 	//Print out all valid ConnectInfos
 	for(vector<ConnectInfo>::iterator it=pInfo.begin(); it != pInfo.end(); ++it){
-	  cout << "Name: " << (*it).getName() << ", Port: " << (*it).getPort() << ", Addr: " << (*it).getAddress() << endl << "Games: ";
-	    copy((*it).games.begin(),(*it).games.end(),ostream_iterator<const ACE_TCHAR*>(cout, ", "));
-		cout << endl;
+	  cout << "Name: " << (*it).getName() << ", Port: " << (*it).getPort() << ", Addr: " << (*it).getAddress() << endl /*<< "Games: "*/;
+	  //Lab2 - Updated the Print statement to print both GameType and Game Name
+	  	for(vector<gametype_game_pair>::iterator itg = (*it).games.begin();itg!= (*it).games.end();++itg)
+			cout << "Game Type : " << itg->first << " :: Game : " << itg-> second;
+	 //Lab2
+	  cout << endl;
 	}
 
 	//Time to create our reactor and get things going

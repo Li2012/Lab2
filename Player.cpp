@@ -155,10 +155,13 @@ int Player::countScore(ACE_InputCDR &cdr)
 //the new player object with the dealer
 int Player::joinGame(ACE_InputCDR &cdr)
 {
+	//Lab2 adding gameType
+	ACE_CDR::Char* gameType;
 	ACE_CDR::Char* gameName;
 
 	//Make sure we can read in the game's name 
-	if(!cdr.read_string(gameName))
+	//Lab2 - Making sure we can read gameType as well
+	if(!cdr.read_string(gameType) || !cdr.read_string(gameName))
 		ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"protocol error (enter-game: no game name)"),-1 );
 
 	//Ask the dealer to add the player to the requested game

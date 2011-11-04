@@ -128,22 +128,25 @@ int Player_Svc_Handler::printSignin(ACE_InputCDR &cdr)
 
 int Player_Svc_Handler::handleEnterGame()
 {
-	cout << "Client sending game names to dealer (" << dealerName << ") @ " << toString(address) << endl;
-
-	for(vector<const ACE_TCHAR*>::iterator itr = games.begin(); itr != games.end(); ++itr)
+	//Lab2 updated output message
+	cout << "Client sending game types and game names to dealer (" << dealerName << ") @ " << toString(address) << endl;
+	//Lab2 updated vector
+	for(vector<gametype_game_pair>::iterator itr = games.begin(); itr != games.end(); ++itr)
 	{
 		ACE_OutputCDR cdr(ACE_DEFAULT_CDR_BUFSIZE);
 		cdr << (ACE_CDR::ULong)CMD_ENTER_GAME;
 
 		//Pack the game name to CDR data and write it to the stream,
 		//check if everything sent ok
-		if(!cdr.write_string(*itr) || writeToOutput(cdr) == -1)
+		//Lab2- Send both GameType and Game Name
+		if(!cdr.write_string(itr->first) || !cdr.write_string(itr->second) || writeToOutput(cdr) == -1)
 			return -1;
 
 		//Output to the console with some formatting
-		if(itr != games.begin())
-			cout << ", ";
-		cout << (*itr);
+		//Lab2 - Updated Formatting to display game type and game name
+		//if(itr != games.begin())
+		cout << "Game Type : " << itr->first << " :: Game Name : " << itr->second;
+		//cout << (*itr);
 	}
 	cout << endl;
 
@@ -332,10 +335,12 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 	}
 	// Check that the received game name is valid
 	bool isGame = false;
-	for(vector<const ACE_TCHAR*>::iterator itr=games.begin(); itr != games.end(); ++itr)
+	//Lab2 - Updated vector
+	for(vector<gametype_game_pair>::iterator itr=games.begin(); itr != games.end(); ++itr)
 	{
 		//We've found the game, can quit searching
-		if(ACE_OS::strcmp( *itr, gameName)== 0)
+		//Lab2 updated *itr to itr->second
+		if(ACE_OS::strcmp( itr->second, gameName)== 0)
 		{
 			isGame = true;
 			break;

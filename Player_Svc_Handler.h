@@ -29,7 +29,8 @@ class Player_Svc_Handler : public ACE_Svc_Handler<ACE_SOCK_Stream,ACE_NULL_SYNCH
 public:
 	Player_Svc_Handler() {}
 	~Player_Svc_Handler() {}
-	Player_Svc_Handler(const ACE_INET_Addr& addr,const ACE_TCHAR* inName,vector<const ACE_TCHAR*> &inGames) : address(addr),pName(inName),games(inGames) { }
+	//Lab2 - changed games to vector of gametype - game tuple
+	Player_Svc_Handler(const ACE_INET_Addr& addr,const ACE_TCHAR* inName,vector<gametype_game_pair> &inGames) : address(addr),pName(inName),games(inGames) { }
 	int handle_input( ACE_HANDLE=ACE_INVALID_HANDLE );
 	int handle_close( ACE_HANDLE=ACE_INVALID_HANDLE, ACE_Reactor_Mask=0 );
 
@@ -67,7 +68,9 @@ private:
 	ACE_INET_Addr address;
 	ACE_CString pName;
 	ACE_CString dealerName;
-	vector<const ACE_TCHAR*> games;
+	//Lab2 - Update vector to hold gametype and game tuple
+	//vector<const ACE_TCHAR*> games;
+	vector<gametype_game_pair> games;
 	PlayerConnection *pConn;
 };
 

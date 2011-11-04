@@ -9,4 +9,4 @@
 ConnectInfo::ConnectInfo() : port(DEFAULT_PORT), address(DEFAULT_ADDR) { }
 ConnectInfo::ConnectInfo(ACE_TCHAR* pName) : port(DEFAULT_PORT), address(DEFAULT_ADDR), name(pName) { }
 void ConnectInfo::setPort(int p) {   if(port > MIN_PORT) port = p; }
-bool ConnectInfo::isInit() { return name && address && port>MIN_PORT && games.size()>0 && /*Lab2*/gameTypes.size()>0; }
+bool ConnectInfo::isInit() { return name && address && port>MIN_PORT && games.size()>0; }

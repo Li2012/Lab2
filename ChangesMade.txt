@@ -1,5 +1,5 @@
-1) Introduce gametype parameter . ConnectInfo , Client.cpp, Const.h
-
+1) Introduce gametype parameter . ConnectInfo , Client.cpp, Const.h,Player_Svc_Handler.h
+2) Updated handleEnterGame of PlayerSVcHandler.cpp to send GameType and Game name
 Player.cpp
 1)handleMessageReceived() add new CMD for Discard case CMD_DISCARD_CARD
 2)Should shuffle and deal new cards , this should be in Game.cpp
