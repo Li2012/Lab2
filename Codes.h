@@ -18,7 +18,9 @@ const unsigned int PRINT_START		= 100;
 enum Commands {
 	CMD_SIGN_IN = CODE_START,
 	CMD_ENTER_GAME,		
-	CMD_CARD_SCORE
+	CMD_CARD_SCORE,
+	//Lab2 - new command to send discarded cards
+	CMD_DISCARD_CARDS
 };
 
 //At various stages of the protocol we receive codes from server

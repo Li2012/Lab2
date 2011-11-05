@@ -164,29 +164,35 @@ int Player_Svc_Handler::writeToOutput(ACE_OutputCDR &cdr)
 //This method just handles the message output when player has joined a game
 int Player_Svc_Handler::printEnter(ACE_InputCDR &cdr)
 {
-	ACE_CDR::Char* gameName, *playerName;
+	//Lab2 - declare game type
+	ACE_CDR::Char* gameName, *playerName ,*gameType;
 	//Try to read in both the new player and which game is being joined
 	//If we don't have both, there was bad data
-	if( !(cdr >> gameName) || !(cdr >> playerName) ){
+	//Lab2 - try to read game type
+	if( !(cdr >> gameType) || !(cdr >> gameName) || !(cdr >> playerName) ){
 		cout << "Failed connecting to: " << toString(address) << ", Error: " << errorMessage(STATUS_UNEXPECTED_DATA) << endl;;
 		return -1;
 	}
 	//Print out the basic data of who has entered and the dealer for the game entered
-	cout << "Dealer: " << dealerName << "  Address: " << toString(address) << ", Player: " << playerName << " joining game " << gameName << endl;
+	//Lab2 - print game type
+	cout << "Dealer: " << dealerName << "  Address: " << toString(address) << ", Player: " << playerName << " joining game " << gameName << " of type " << gameType <<endl;
 	return 0;
 }
 //This method just handles the message output when a player leaves a game
 int Player_Svc_Handler::printLeave(ACE_InputCDR &cdr)
 {
-	ACE_CDR::Char* gameName, *playerName;
+	//Lab2 - declare game type
+	ACE_CDR::Char* gameName, *playerName ,*gameType;
 	//Try to read in both the new player and which game is being joined
 	//If we don't have both, there was bad data
-	if( !(cdr >> gameName) || !(cdr >> playerName) ){
+	//Lab2 - try to read game type
+	if( !(cdr >> gameType) || !(cdr >> gameName) || !(cdr >> playerName) ){
 		cout << "Failed connecting to: " << toString(address) << ", Error: " << errorMessage(STATUS_UNEXPECTED_DATA) << endl;;
 		return -1;
 	}
 	//Print out the basic data of who has entered and the dealer for the game entered
-	cout << "Dealer: " << dealerName << "  Address: " << toString(address) << ", Player: " << playerName << " leaving game " << gameName << endl;
+	//Lab2 - print game type
+	cout << "Dealer: " << dealerName << "  Address: " << toString(address) << ", Player: " << playerName << " leaving game " << gameName << " of type " << gameType << endl;
 	return 0;
 }
 
@@ -194,6 +200,8 @@ int Player_Svc_Handler::printEntry(ACE_InputCDR& cdr)
 {
 	ACE_CDR::ULong status, numUsers;
 	ACE_CDR::Char* gameName;
+	//Lab2 - read game type
+	ACE_CDR::Char* gameType;
 
 	//If we couldn't read in the state, something bad happened
 	if(!(cdr >> status)){
@@ -206,13 +214,15 @@ int Player_Svc_Handler::printEntry(ACE_InputCDR& cdr)
 		return -1;
 	}
 	//If we can't read in the number of users / game name, something bad happened
-	if(!(cdr >> numUsers) || !(cdr >> gameName)){
+	//Lab2 - try to read game type
+	if(!(cdr >> numUsers) || !(cdr >> gameType) || !(cdr >> gameName)){
 		cout << "Failed connecting to: " << toString(address) << ", Error: " << errorMessage(STATUS_UNEXPECTED_DATA) << endl;
 		return -1;
 	}
 
 	//We got all the appropriate data, send out the information to our player
-	cout << "Dealer: " << dealerName << ", Address: " << toString(address) << ", Entering: " << gameName;
+	//Lab2 - print gameType along with game name
+	cout << "Dealer: " << dealerName << ", Address: " << toString(address) << ", Entering: " << gameName << " of Type : " << gameType;
 
 	for(ACE_CDR::ULong i=0; i<numUsers; ++i)
 	{
@@ -327,9 +337,11 @@ int Player_Svc_Handler::processRead(ACE_InputCDR &cdr)
 int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 {
 	ACE_CDR::Char rank, suit;
-	ACE_CDR::Char* gameName;
+	//Lab2 - declare game type
+	ACE_CDR::Char* gameName, *gameType;
 	//Read in the game name that this is for
-	if(!(cdr >> gameName)){
+	//Lab2 - read game type
+	if(!(cdr >> gameType) || !(cdr >> gameName)){
 		cout << "printHand: Did not receive game name. (" << toString(address) << ")" << endl;
 		return -1;
 	}
@@ -339,8 +351,8 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 	for(vector<gametype_game_pair>::iterator itr=games.begin(); itr != games.end(); ++itr)
 	{
 		//We've found the game, can quit searching
-		//Lab2 updated *itr to itr->second
-		if(ACE_OS::strcmp( itr->second, gameName)== 0)
+		//Lab2 updated *itr to itr->second , compare both gameType and gameName
+		if(ACE_OS::strcmp( itr->first, gameType)== 0 && ACE_OS::strcmp( itr->second, gameName)== 0)
 		{
 			isGame = true;
 			break;
@@ -350,8 +362,9 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 	//It's possible that we got to the end of the previous
 	//loop without finding the game. In that case, we don't
 	//have a record of this game and return an error
+	//Lab2 - update to print game type
 	if(!isGame){
-		cout << "printHand: Client has no record of game: " << gameName << endl;
+		cout << "printHand: Client has no record of game: " << gameName << " type : "<< gameType << endl;
 		return -1;
 	}
 	// We've found the game, proceed to print out hands
@@ -373,7 +386,7 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 		c.c_suit = (Suit)suit;
 		theHand.add_card(c);
 	}
-	cout << "Dealer (" << dealerName << ") dealt following for game (" << gameName << "): ";
+	cout << "Dealer (" << dealerName << ") dealt following for game (" << gameName << "): " << " of type (" << gameType << "): ";
 	cout << theHand;
 
 	int theScore = getHandRank(theHand);
@@ -386,7 +399,8 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 	ocdr << (ACE_CDR::ULong)CMD_CARD_SCORE;
 
 	//Add in the name of the game and player score respectively
-	if(!(ocdr.write_string(gameName)) || !(ocdr << theScore)){
+	//Lab2 - write game type
+	if(!(ocdr.write_string(gameType)) || !(ocdr.write_string(gameName)) || !(ocdr << theScore)){
 		cout << "Error: printHand: Could not write the game name or score." << endl;
 		return -1;
 	}
@@ -399,17 +413,19 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 
 int Player_Svc_Handler::printWinner(ACE_InputCDR &cdr)
 {
-	ACE_CDR::Char* gameName, *playerN;
+	//Lab2 declare gameType
+	ACE_CDR::Char* gameName, *playerN, *gameType;
 	ACE_CDR::ULong numUsers;
 
 	//Make sure that the data received holds both the
 	//name of the game and how many players
-	if(!(cdr >> gameName) || !(cdr >> numUsers)){
+	//Lab2 read game type
+	if(!(cdr >> gameType) || !(cdr >> gameName) || !(cdr >> numUsers)){
 		cout << "Failed printing winner with error: Unexpected Data" << " @ address: " << toString(address) << endl;
 		return -1;
 	}
-
-	cout << "Dealer: " << dealerName << " @ address: " << toString(address) << ", game: " << gameName << endl;
+	//Lab2 print game type
+	cout << "Dealer: " << dealerName << " @ address: " << toString(address) << ", game: " << gameName << " of type : " << gameType << endl;
 	cout << "Order of player scores is: ";
 
 	//Read in the players names from data one at a time

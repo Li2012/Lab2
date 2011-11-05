@@ -26,12 +26,16 @@ private:
 	void disconnectPlayer();
 	int respondMessageToClient(int code, int status);
 	int respondMessageToClient(int code, int status, const ACE_TCHAR* body);
+	//lab2
+	int respondMessageToClient(int code, int status, const ACE_TCHAR* body1,const ACE_TCHAR* body2);
 	int sendMessageToClient(int code, const ACE_TCHAR* body);
 	int sendMessageToClient(int code);
 	int handleMessageReceived(ACE_InputCDR &cdr);
 	int initPlayer(ACE_InputCDR &cdr);
 	int joinGame(ACE_InputCDR &cdr);
 	int countScore(ACE_InputCDR &cdr);
+	//Lab2 - method to send new cards to Player
+	int sendNewCards(ACE_InputCDR &cdr);
 
 	Dealer*	dealer;
 	string	name;

@@ -28,7 +28,7 @@ public:
 	map<string, Game*> games; //Holds all of the existing games
 
 	//Adds a player to the map<string,Player*> container by name
-	int addPlayerToGame(const ACE_TCHAR* nameIn, Player* player);
+	int addPlayerToGame(const ACE_TCHAR* nameIn,const ACE_TCHAR* typeIn, Player* player);
 
 	//Removes a player from the map<string,Player*> container by Player ptr
 	void removePlayerFromGame(Game* game, Player* player);
@@ -37,6 +37,9 @@ public:
 	//call the scoring function for the appropriate game (if it exists)
 	//and return the result
 	int scoreHand(const ACE_TCHAR* gameName, Player* player, int score);
+
+	//Lab2 replaces discarded cards received from Player
+	int replaceCards(const ACE_TCHAR* gameName,vector<CardPair> discardedCards,Player* player);
 
 	//Whenever a new client connects to the server, a new instance of Player
 	//must be registered with the reactor

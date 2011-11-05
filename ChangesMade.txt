@@ -1,5 +1,6 @@
 1) Introduce gametype parameter . ConnectInfo , Client.cpp, Const.h,Player_Svc_Handler.h
 2) Updated handleEnterGame of PlayerSVcHandler.cpp to send GameType and Game name
+3) Update Dealer.cpp ,Dealer.h , Game.h to add gameType and add new parameter to addPlayerToGame
 Player.cpp
 1)handleMessageReceived() add new CMD for Discard case CMD_DISCARD_CARD
 2)Should shuffle and deal new cards , this should be in Game.cpp
@@ -10,3 +11,9 @@ Player.cpp
 6) Discarding Logic is in Player_Svc_Handler.cpp , should identify gameType and update discarding logic. In printHand , based on gameType should discard cards if it is fiveCard draw or do the same as before..
 
 7) Once new cards come back should recalculate score and print.
+
+8) Will have to update Deck.cpp to discard the cards sent by Player.
+First use vector.erase to remove the cards
+then use vector.insert to add them
+then shuffle it using the return value of insert used as card. begin
+

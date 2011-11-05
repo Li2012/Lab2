@@ -10,6 +10,7 @@
 #include "Codes.h"
 #include "Dealer.h"
 #include "Player.h"
+#include "Const.h"
 using namespace std;
 
 //Called by super class when the socket has been opened
@@ -72,6 +73,22 @@ int Player::respondMessageToClient(int code, int state, const ACE_TCHAR* body)
 	return send(cdr);
 }
 
+//Lab2 - overload for sending 2 strings
+//Sends a message packet to a client via it's
+//super class. This method is a generic messsage communication
+//that takes any C-style message string
+int Player::respondMessageToClient(int code, int state, const ACE_TCHAR* body1,const ACE_TCHAR* body2)
+{
+	ACE_OutputCDR cdr( ACE_DEFAULT_CDR_BUFSIZE );
+
+	//Fill our data stream with the type identifier (code), state, and generic message body
+	if(!(cdr << (ACE_CDR::ULong)code) || !(cdr << (ACE_CDR::ULong)state) || !(cdr.write_string(body1)) || !(cdr.write_string(body2)))
+		return -1;
+
+	//Let the super class handle the actual send via our Data Wrapper
+	return send(cdr);
+}
+
 //Sends a message to the client containing just
 //a code which tells the client to do something
 int Player::sendMessageToClient(int code)
@@ -128,6 +145,9 @@ int Player::handleMessageReceived(ACE_InputCDR &cdr)
 	//Called when the player's hand is scored
 	case CMD_CARD_SCORE:
 		return countScore( cdr );
+	//Lab2 - Called when player discards cards for game type - Draw
+	case CMD_DISCARD_CARDS:
+		return sendNewCards( cdr );
 	default:
 		ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"The message type code was not recognized."),-1);
 	}
@@ -139,12 +159,15 @@ int Player::handleMessageReceived(ACE_InputCDR &cdr)
 //method to return the appropriate card score
 int Player::countScore(ACE_InputCDR &cdr)
 {
-	ACE_CDR::Char* gameName;
+	//Lab2 declare game type
+	ACE_CDR::Char* gameName,*gameType;
 	ACE_CDR::Long score;
+
 
 	//Read in the game name and score from stream and make sure
 	//that both are there
-	if(!cdr.read_string(gameName) || !(cdr >> score))
+	//Lab2 - read game type with game name and score
+	if(!cdr.read_string(gameType) || !cdr.read_string(gameName) || !(cdr >> score))
 		ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"Missing parameter for score count."),-1);
 
 	//Ask the dealer to score the hand for this particular game/player
@@ -162,10 +185,10 @@ int Player::joinGame(ACE_InputCDR &cdr)
 	//Make sure we can read in the game's name 
 	//Lab2 - Making sure we can read gameType as well
 	if(!cdr.read_string(gameType) || !cdr.read_string(gameName))
-		ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"protocol error (enter-game: no game name)"),-1 );
+		ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"protocol error (enter-game: no game name or game type)"),-1 );
 
 	//Ask the dealer to add the player to the requested game
-	return dealer->addPlayerToGame(gameName,this);
+	return dealer->addPlayerToGame(gameName,gameType,this);
 }
 
 //This method handles the initial setup and registration
@@ -219,4 +242,65 @@ int Player::initPlayer(ACE_InputCDR &cdr)
 	return send(sendCDR);
 }
 
+//Lab2
+//This method handles the discarded cards from Player.
+//it will receive from Player number of cards to be discarded
+// and also the cards that are to be discarded. This method will
+// check if the game type allows cards to be discarded , then will
+//send those many cards back to Player.
+int Player::sendNewCards(ACE_InputCDR &cdr)
+{
+
+		ACE_CDR::Char* gameType;
+		ACE_CDR::Char* gameName;
+		ACE_CDR::ULong numCards;
+		ACE_CDR::Char rank, suit;
+
+		//Make sure we can read in the game's name
+		//Lab2 - Making sure we can read gameType as well
+		if(!cdr.read_string(gameType) || !cdr.read_string(gameName) || !(cdr >> numCards))
+			ACE_ERROR_RETURN((LM_ERROR, "%s, %s\n",toString(peerAddr).c_str(),"Missing parameters for discard cards"),-1 );
+
+
+		//if game type for the game is not of type Draw then
+		//we do not want to accept discarded cards for this game type
+		if(strcmp(gameType,GAME_TYPE_DRAW.c_str()) != 0)
+			return respondMessageToClient(CMD_DISCARD_CARDS,STATUS_FORBIDDEN);
+
+		//if number of cards discarded is  greater than 5
+		//should return error
+		if(numCards > 5)
+			return respondMessageToClient(CMD_DISCARD_CARDS,STATUS_BAD_REQUEST);
+
+		//Read the discarded cards from the stream
+		vector<CardPair> discardedCards;
+		for(unsigned int i = 0; i < numCards ; i++)
+		{
+			CardPair c;
+			//Read in the card rank from data stream
+			if(!(cdr >> rank))
+			{
+				cout << "Error: sendNewCards: Failed to read the card rank." << endl;
+				return -1;
+			}
+			//Read in the card suit from data stream
+			if(!(cdr >> suit))
+			{
+				cout << "Error: sendNewCards: Failed to read the card suit." << endl;
+				return -1;
+			}
+			c.first = (Rank)rank;
+			c.second = (Suit)suit;
+			discardedCards.push_back(c);
+		}
+
+		//Check if  size of vector is same numCards
+		//if not return error status
+		if(discardedCards.size()!=numCards)
+			return respondMessageToClient(CMD_DISCARD_CARDS,STATUS_BAD_REQUEST);
+
+		//Ask dealer to replace the cards sent by Player
+		return dealer->replaceCards(gameName,discardedCards,this);
+
+}
 

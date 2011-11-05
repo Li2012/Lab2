@@ -38,6 +38,8 @@ int Game::joinPlayer(Player* player)
 	//Add number of players in the game already
 	cdr << (ACE_CDR::ULong)players.size();
 	//Add new player's name
+	//Lab2 - Add game name and game type
+	cdr.write_string( type.c_str() );
 	cdr.write_string( name.c_str() );
 	//Iterate through player list and add everyone else's name as well
 	for(set<Player*>::iterator itr=players.begin(); itr != players.end(); ++itr) 
@@ -64,6 +66,8 @@ int Game::joinPlayer(Player* player)
 		//Appropriate message identifier
 		oCDR << (ACE_CDR::ULong)PRINT_GAME_ENTRY;
 
+		//Lab2 - Type of the Game
+		oCDR.write_string( type.c_str() );
 		//Name of this game
 		oCDR.write_string( name.c_str() );
 
@@ -111,6 +115,8 @@ void Game::removePlayer(Player* player)
 		//Add the appropriate message identifier code
 		notify_cdr << (ACE_CDR::ULong)PRINT_LEAVE_GAME;
 
+		//Lab2 - Type of Game they are leaving
+		notify_cdr.write_string(type.c_str());
 		//The name of the game they are leaving
 		notify_cdr.write_string(name.c_str());
 
@@ -166,7 +172,7 @@ void Game::startDealing()
 	//Shuffle the deck and make sure it has all of the cards
 	deck.shuffle();
 
-	cout << "Game (" << name << ") beginning a new game:" << endl;
+	cout << "Game (" << name << "): of Type (" << type << "): beginning a new game:" << endl;
 
 	//We only have a set number of cards in the deck, so we enforce a maximum
 	//number of players (Deck size / Hand size) that can be playing the game 
@@ -181,7 +187,7 @@ void Game::startDealing()
 //sends the game name and hand to the client
 void Game::dealToPlayer(Player* player)
 {
-	cout << "Game (" << name << "): Dealing to player: " << player->name << endl;
+	cout << "Game (" << name << "): of Type (" << type << "): Dealing to player: " << player->name << endl;
 
 	//Whenever we deal cards to a player, we also want to score
 	//their hand at the end.
@@ -193,6 +199,8 @@ void Game::dealToPlayer(Player* player)
 	//Preface with appropriate message identifier
 	cdr << (ACE_CDR::ULong)PRINT_CARD_HAND;
 
+	//Lab2 - Add type of the game
+	cdr.write_string(type.c_str());
 	//Add the name of the game
 	cdr.write_string(name.c_str());
 
@@ -220,6 +228,9 @@ void Game::finishGame()
 	ACE_OutputCDR cdr(ACE_DEFAULT_CDR_BUFSIZE);
 	//First add the appropriate message identifier
 	cdr << (ACE_CDR::ULong)PRINT_WINNER;
+
+	//Lab2 Add type of the game
+	cdr.write_string( type.c_str());
 	//Add the name of the game
 	cdr.write_string( name.c_str() );
 	//How many players/scores we have
@@ -270,8 +281,8 @@ void Game::waitBetweenGames()
 	}
 	//Set the flag that we're now waiting
 	waitingBetweenGames = true;
-
-	cout << "Game (" << name << ") waiting for " << timeBetweenGames << " seconds before next game." << endl;
+	//Lab2 print game type
+	cout << "Game (" << name << ") of Type (" << type << ") waiting for " << timeBetweenGames << " seconds before next game." << endl;
 }
 
 // Update score and send it to the particular client
@@ -282,8 +293,9 @@ int Game::calculateHandScore(Player* player, int score)
 	// 2) Game is currently in a waiting period
 	//In either case, inform the client that it has asked for info at
 	//the wrong time.
+	//Lab2 send game type with game names
 	if(players.find(player)==players.end() || !gameInProgress())
-		return player->respondMessageToClient(CMD_CARD_SCORE,STATUS_FORBIDDEN,name.c_str());
+		return player->respondMessageToClient(CMD_CARD_SCORE,STATUS_FORBIDDEN,type.c_str(),name.c_str());
 
 	//Get an iterator positioned at this players place in the score
 	//container
@@ -294,10 +306,10 @@ int Game::calculateHandScore(Player* player, int score)
 	// spectators who don't have scores. Alternately, if the player hasn't
 	// recorded a score yet, the value will be -1
 	if(itr == scores.end() || itr->first != -1)
-		return player->respondMessageToClient(CMD_CARD_SCORE,STATUS_FORBIDDEN,name.c_str());
+		return player->respondMessageToClient(CMD_CARD_SCORE,STATUS_FORBIDDEN,type.c_str(),name.c_str());
 
 	//Everything is ok at this point -> player is in the game and has a score
-	int	ret = player->respondMessageToClient(CMD_CARD_SCORE,STATUS_OK,name.c_str());
+	int	ret = player->respondMessageToClient(CMD_CARD_SCORE,STATUS_OK,type.c_str(),name.c_str());
 	//Something happened with sending
 	if(ret == -1)
 		return -1;
@@ -305,8 +317,8 @@ int Game::calculateHandScore(Player* player, int score)
 	// Sync up our local container with the player's score
 	itr->first = score;
 	numScoresReported++;
-
-	cout << "Game (" << name << ") received score from " << player->name << endl;
+	//Lab2 printing game type
+	cout << "Game (" << name << ") of Type (" << type << ") received score from " << player->name << endl;
 	
 	// If all scores have been run through this method, then the game
 	// is ready to be cleaned up
@@ -334,8 +346,8 @@ int Game::handle_timeout(const ACE_Time_Value&, const void*)
 		cout << "ERROR: Tried to end waiting period while game was still going! Ignoring." << endl;
 		return -1;
 	}
-
-	cout << "Game (" << name << ") trying to begin next round: ";
+	//Lab2 print game type
+	cout << "Game (" << name << ") of Type (" << type << ") trying to begin next round: ";
 
 	//Reset the flag for next time
 	waitingBetweenGames = false;
@@ -350,4 +362,45 @@ int Game::handle_timeout(const ACE_Time_Value&, const void*)
 		cout << "not enough players, waiting." << endl;
 
 	return 0;
+}
+
+
+//Lab2 This method will do actual replace of discarded
+// cards with new cards from the deck and will send back to Player
+int Game::swapCards(vector<CardPair> discardedCards,Player* player)
+{
+	//Check for game type if it is of type Draw
+	if(type.compare(GAME_TYPE_DRAW) != 0)
+		return player->respondMessageToClient(CMD_DISCARD_CARDS,STATUS_FORBIDDEN);
+
+	ACE_OutputCDR cdr( ACE_DEFAULT_CDR_BUFSIZE );
+
+	//Add appropriate message identifier
+	cdr << (ACE_CDR::ULong)CMD_DISCARD_CARDS;
+	//Add state code
+	cdr << (ACE_CDR::ULong)STATUS_OK;
+	// Add type of the game
+	cdr.write_string(type.c_str());
+	//Add the name of the game
+	cdr.write_string(name.c_str());
+	//Add number of cards that are being replaced
+	cdr << (ACE_CDR::ULong)discardedCards.size();
+
+	// Deal out cards to Player as many as discarded by Player
+	//and add them to the message to be sent out
+	for(unsigned int cardNum=0; cardNum<discardedCards.size(); ++cardNum)
+	{
+		Rank rank;
+		Suit suit;
+		deck.dealCard(rank, suit);
+		cdr << (ACE_CDR::Char)rank;
+		cdr << (ACE_CDR::Char)suit;
+	}
+
+	//Sending and error checking taken care of by Player -> DataWrapper
+	player->send(cdr);
+
+	// Now should add back the discarded cards to the deck and shuffle
+	//need to ensure only to shuffle the cards that remain with dealer
+
 }

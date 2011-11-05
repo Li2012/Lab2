@@ -17,10 +17,12 @@ Dealer::~Dealer()
 	for(map<string, Game*>::iterator itr = games.begin(); itr != games.end(); ++itr)
 		delete itr->second;
 }
-
-int Dealer::addPlayerToGame(const ACE_TCHAR* nameIn, Player* player)
+//Lab2 - updated method arguments to take in game type
+int Dealer::addPlayerToGame(const ACE_TCHAR* nameIn,const ACE_TCHAR* typeIn, Player* player)
 {
 	string gameName(nameIn);
+	//Lab2 - initialize gameType
+	string gameType(typeIn);
 
 	//Check if the game is already present
 	map<string, Game*>::iterator itr = games.find(gameName);
@@ -35,8 +37,11 @@ int Dealer::addPlayerToGame(const ACE_TCHAR* nameIn, Player* player)
 	else //This is a game name we haven't seen before, we need to
 	{	 //create a new game instance and register with the reactor
 		Game* newGame;
-		ACE_NEW_RETURN(newGame, Game(gameName.c_str(),reactor()), -1);
+		//Lab2 -update Game constructor
+		ACE_NEW_RETURN(newGame, Game(gameName.c_str(),gameType.c_str(),reactor()), -1);
 		//Add to the game container
+		//Lab2 - Need to make a check if same game was tried to be entered with different
+		//game type. If yes , ignore this gameType.
 		games.insert(make_pair(gameName, newGame));
 		gameJoined = newGame;
 	}
@@ -73,9 +78,29 @@ int Dealer::scoreHand(const ACE_TCHAR* gameName, Player* player,int score)
 
 	//If we didn't find the game specified (game_name), we send back
 	//the appropriate status and end here
+	//Lab2 - update game type to the response message
 	if(iter == games.end())
-		return player->respondMessageToClient(CMD_CARD_SCORE, STATUS_NOT_FOUND, gameName);
+		return player->respondMessageToClient(CMD_CARD_SCORE, STATUS_NOT_FOUND,iter->second->type.c_str(),gameName);
 
 	//Found the game, try to actually score the hand and report the score
 	return iter->second->calculateHandScore(player, score);
 }
+
+//Lab2 this method will find the appropriate game
+//and call method to replace the discarded cards
+int Dealer::replaceCards(const ACE_TCHAR* gameName,vector<CardPair> discardedCards,Player* player)
+{
+	//Find which game we are replacing the hand for
+	map<string, Game*>::iterator iter = games.find(gameName);
+
+	//If we didn't find the game specified (game_name), we send back
+		//the appropriate status and end here
+		//Lab2 - update game type to the response message
+		if(iter == games.end())
+			return player->respondMessageToClient(CMD_CARD_SCORE, STATUS_NOT_FOUND,iter->second->type.c_str(),gameName);
+
+		//Found the game, try to actually replace the cards and send back to Player
+			return iter->second->swapCards(discardedCards,player);
+
+}
+
