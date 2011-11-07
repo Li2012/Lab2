@@ -24,9 +24,13 @@ public:
 	pair<Rank, Suit> dealCard();
 	void dealCard(Rank& rank, Suit& suit);
 	void print(ostream& os);
+	//Lab2 - Method to add cards back into non- dealed cards
+	void addCardsToDeck(vector<CardPair> c);
 private:
 	vector<CardPair> cards;
 	vector<CardPair>::iterator nextCard;
+	//Lab2- need iterators to point to end of dealed cards
+	vector<CardPair>::iterator lastDealedCard;
 };
 
 #endif

@@ -16,7 +16,7 @@ EXECUTABLE2	= Client
 #		function definitions.)
 CMPL_COMM	= Codes.cpp DataWrapper.cpp Card.cpp
 CMPL_SRCS1	= ClientHandler.cpp Dealer.cpp Deck.cpp Game.cpp Player.cpp Server.cpp ServerHandler.cpp
-CMPL_SRCS2	= Client.cpp ConnectInfo.cpp Player_Svc_Handler.cpp PlayerConnection.cpp Poker.cpp Hand.cpp
+CMPL_SRCS2	= Client.cpp ConnectInfo.cpp Player_Svc_Handler.cpp PlayerConnection.cpp Poker.cpp Hand.cpp Discard.cpp
 
 #               Source files containing *only* function template or class 
 #		template member function definitions: note that you
@@ -28,7 +28,7 @@ TMPL_SRCS2	=
 #               Header files
 HEADER_COMMON	 = Card.h Codes.h Const.h DataWrapper.h Lib.h Stream.h
 HEADER_FILES1    = ClientHandler.h Dealer.h Deck.h Game.h Player.h ServerHandler.h
-HEADER_FILES2    = ConnectInfo.h Player_Svc_Handler.h PlayerConnection.h Poker.h Hand.h
+HEADER_FILES2    = ConnectInfo.h Player_Svc_Handler.h PlayerConnection.h Poker.h Hand.h Discard.h
 
 TEST_SCRIPTS	= 
 #               Other files to turn in (Makefile, readme, output files, etc.)

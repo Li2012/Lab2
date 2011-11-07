@@ -402,5 +402,6 @@ int Game::swapCards(vector<CardPair> discardedCards,Player* player)
 
 	// Now should add back the discarded cards to the deck and shuffle
 	//need to ensure only to shuffle the cards that remain with dealer
+	deck.addCardsToDeck(discardedCards);
 
 }

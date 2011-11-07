@@ -23,8 +23,9 @@
 const int DEFAULT_PORT = 2000;
 const ACE_TCHAR DEFAULT_ADDR[] = ACE_TEXT("localhost");
 const int MIN_PORT = 1024;
-const unsigned int MIN_PLAYER = 5; // # of players needed to start a game
+const unsigned int MIN_PLAYER = 3; // # of players needed to start a game
 const unsigned int MAX_PLAYER = 10; // # of players that can be playing a game (deck size / hand size)
+const unsigned int MAX_PLAYER_DRAW = 8; // # of players that can be playing a game type Draw
 const int timeBetweenGames = 5; // how long to wait before starting a new game
 
 const int DEFAULT_LOG_BUFFERSIZE = 1024;

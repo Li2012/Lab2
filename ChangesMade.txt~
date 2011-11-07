@@ -11,3 +11,7 @@ Player.cpp
 6) Discarding Logic is in Player_Svc_Handler.cpp , should identify gameType and update discarding logic. In printHand , based on gameType should discard cards if it is fiveCard draw or do the same as before..
 
 7) Once new cards come back should recalculate score and print.
+
+8) Will have to update Deck.cpp to discard the cards sent by Player.
+created New method to addCards back to deck
+

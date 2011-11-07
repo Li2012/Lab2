@@ -14,6 +14,8 @@ using namespace std;
 
 Hand::Hand(){
 	handVec.clear();
+	//Lab2
+	handVec.reserve(5);
 }
 Hand::Hand(const Hand & otherHand){
 	for(size_t i = 0; i < otherHand.size(); i++)
@@ -41,7 +43,8 @@ bool Hand::operator==(const Hand &otherHand) const{
 	for(size_t i = 0; i < size(); ++i){
 		bool foundCard = false;
 		for(size_t j = 0; j < otherHand.size(); ++j){
-			if(handVec[i] == otherHand.handVec[j]) 
+			//Lab2 - update comparison for boolean
+			if(handVec[i].first == otherHand.handVec[j].first && handVec[i].second == otherHand.handVec[j].second)
 			{
 				foundCard = true;
 				break;
@@ -56,14 +59,16 @@ bool Hand::operator==(const Hand &otherHand) const{
 string Hand::asString() const {
 	string hand;
 	for(size_t i = 0; i < handVec.size(); ++i){
-		hand += printRank(handVec[i]);
-		hand += printSuit(handVec[i]);
+		//Lab2 - print first of pair
+		hand += printRank(handVec[i].first);
+		hand += printSuit(handVec[i].first);
 		hand += " ";
 	}
 	return hand;
 }
 
-int Hand::add_card(Card c) {
+//Lab2 Replace with card bool pair
+int Hand::add_card(card_bool_pair c) {
 	handVec.push_back(c);
 	return 0;
 }
@@ -74,7 +79,8 @@ int Hand::remove_card(const size_t index) {
 	handVec.erase(handVec.begin()+(index));
 	return 0;
 }
-Card Hand::operator[] (const size_t index) const {
+//Lab2 update to card bool pair
+card_bool_pair Hand::operator[] (const size_t index) const {
 	if(index >= size())
 		throw BAD_CARD_INDEX_ERROR;
 	return handVec[index];
@@ -85,8 +91,20 @@ ostream & operator<< (ostream &o, const Hand &otherHand) {
 	return o;
 }
 
+//Lab2 Update the method to return only vector of Cards.
 vector<Card> Hand::getHand() const{
-	return handVec;
+	vector<Card> cards;
+	//Comment - Need const_iterator here as handVec.begin() return const_iterator
+	for(vector<card_bool_pair>::const_iterator itr = handVec.begin();itr!=handVec.end();++itr)
+	{
+		cards.push_back(itr->first);
+	}
+	return cards;
+}
+
+//Lab2 new method to return hand and bool pair
+vector<card_bool_pair>* Hand::getHandBoolPair() {
+return &handVec;
 }
 
 bool Hand::operator< (const Hand &otherHand) {
@@ -105,9 +123,10 @@ bool Hand::operator< (const Hand &otherHand) {
 		else if(i >= otherSize && i < thisSize)
 			//Converse of previous case
 			return false;
-		else if(handVec[i] < otherHand.handVec[i])
+		//Lab2 - print first of pair
+		else if(handVec[i].first < otherHand.handVec[i].first)
 			return true;
-		else if(otherHand.handVec[i] < handVec[i])
+		else if(otherHand.handVec[i].first  < handVec[i].first)
 			return false;
 	}
 

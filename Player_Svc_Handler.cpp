@@ -10,12 +10,26 @@
 #include "PlayerConnection.h"
 #include "Stream.h"
 #include "Poker.h"
-#include "Hand.h"
 #include "Card.h"
 //#include "DataWrapper.h"
 #include <iostream>
+#include "Discard.h"
+#include<algorithm>
+#include <functional>
 using namespace std;
 
+
+
+struct isCard
+{
+	Card c;
+	isCard(const Card& val) : c(val) {}
+	bool operator()(const card_bool_pair& x) const
+	{
+		return x.first == c;
+	}
+
+};
 
 void Player_Svc_Handler::setPlayerConnection(PlayerConnection * conn)
 {
@@ -248,7 +262,7 @@ int Player_Svc_Handler::printEntry(ACE_InputCDR& cdr)
 int Player_Svc_Handler::printScore(ACE_InputCDR &cdr)
 {
 	ACE_CDR::Long status;
-	ACE_CDR::Char* gameName;
+	ACE_CDR::Char* gameName, *gameType;
 
 	//Make sure that our data contains a status
 	if(!(cdr >> status)){
@@ -260,13 +274,13 @@ int Player_Svc_Handler::printScore(ACE_InputCDR &cdr)
 		cout << "printScore: Failed connecting to: " << toString(address) << ", Error: (" << status << ") " << errorMessage((State)status) << endl;
 		return -1;
 	}
-	//Make sure that our data contains the game name
-	else if(!(cdr >> gameName)){
+	//Make sure that our data contains the game name and (Lab2) gametype
+	else if(!(cdr >> gameType) || !(cdr >> gameName)){
 		cout << "Failed connecting to: " << toString(address) << ", Error: " << errorMessage(STATUS_UNEXPECTED_DATA) << endl;
 		return -1;
 	}
-
-	cout << "Dealer: " << dealerName << ", sent score for game (" << gameName << ")" << endl;
+	//Lab2 - added game type to print
+	cout << "Dealer: " << dealerName << ", sent score for game (" << gameName << ") of type ("<< gameType <<")"  << endl;
 
 	return 0;
 }
@@ -325,6 +339,10 @@ int Player_Svc_Handler::processRead(ACE_InputCDR &cdr)
 		case CMD_CARD_SCORE:
 			gameState = printScore(cdr);
 			break;
+		//Lab2 - switch for discarded cards
+		case CMD_DISCARD_CARDS:
+			gameState = receiveNewCards(cdr);
+			break;
 		default:
 			cout << toString(address) << " - Couldn't recognize game state code." << endl;
 			return -1;
@@ -368,7 +386,9 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 		return -1;
 	}
 	// We've found the game, proceed to print out hands
-	Hand theHand;
+	//Lab2 - Included theHand as member variable --
+
+	Hand tmpHand;
 	for(unsigned int cardNum=0; cardNum<HAND_SIZE; ++cardNum)
 	{
 		Card c;
@@ -384,31 +404,30 @@ int Player_Svc_Handler::printHand(ACE_InputCDR &cdr)
 		}
 		c.c_rank = (Rank)rank;
 		c.c_suit = (Suit)suit;
-		theHand.add_card(c);
+		//Lab2 create variable for card and boolean pair
+		card_bool_pair cp;
+		cp.first=c;
+		//By default card is set to be not discarded.
+		cp.second = false;
+		tmpHand.add_card(cp);
+		//theHand.getHandBoolPair()->push_back(cp);
 	}
+	//Lab2 - assign reference of tmp variable to member pointer
+	theHand = tmpHand;
 	cout << "Dealer (" << dealerName << ") dealt following for game (" << gameName << "): " << " of type (" << gameType << "): ";
-	cout << theHand;
+	cout << theHand << endl;
 
-	int theScore = getHandRank(theHand);
-	string handRankString(getRankString(theHand));
-	cout << " (" << handRankString << ") - Score: " << theScore << endl;
-
-	// Build a data stream to send to the server with the score
-	ACE_OutputCDR ocdr(ACE_DEFAULT_CDR_BUFSIZE);
-	//Appropriate message identifier
-	ocdr << (ACE_CDR::ULong)CMD_CARD_SCORE;
-
-	//Add in the name of the game and player score respectively
-	//Lab2 - write game type
-	if(!(ocdr.write_string(gameType)) || !(ocdr.write_string(gameName)) || !(ocdr << theScore)){
-		cout << "Error: printHand: Could not write the game name or score." << endl;
-		return -1;
+	//Lab2 Need to add method to discard cards if game type is of draw
+	//else if game is of type stud call the method to send score
+	if(strcmp(gameType,GAME_TYPE_DRAW.c_str())==0)
+	{
+		return discardCards(gameType,gameName);
 	}
-	if(writeToOutput(ocdr) == -1){
-		cout << "Error: printHand: Could not write out the score to server." << endl;
-		return -1;
+	else
+	{
+		return sendScore(gameType,gameName);
 	}
-	return 0;
+
 }
 
 int Player_Svc_Handler::printWinner(ACE_InputCDR &cdr)
@@ -475,3 +494,149 @@ int Player_Svc_Handler::printError(ACE_InputCDR &cdr)
 	return 0;
 }
 
+//Lab2 method to send score to Dealer
+int Player_Svc_Handler::sendScore(const ACE_TCHAR* gameType,const ACE_TCHAR* gameName)
+{
+	int theScore = getHandRank(theHand);
+	string handRankString(getRankString(theHand));
+	cout << " (" << handRankString << ") - Score: " << theScore << endl;
+
+	// Build a data stream to send to the server with the score
+	ACE_OutputCDR ocdr(ACE_DEFAULT_CDR_BUFSIZE);
+	//Appropriate message identifier
+	ocdr << (ACE_CDR::ULong)CMD_CARD_SCORE;
+
+	//Add in the name of the game and player score respectively
+	//Lab2 - write game type
+	if(!(ocdr.write_string(gameType)) || !(ocdr.write_string(gameName)) || !(ocdr << theScore)){
+		cout << "Error: sendScore: Could not write the game name or score." << endl;
+		return -1;
+	}
+	if(writeToOutput(ocdr) == -1){
+		cout << "Error: sendScore: Could not write out the score to server." << endl;
+		return -1;
+	}
+	return 0;
+}
+//Lab2 method to receive new cards
+int Player_Svc_Handler::receiveNewCards(ACE_InputCDR &cdr)
+{
+	ACE_CDR::Long status,newCards;
+	ACE_CDR::Char rank, suit;
+	ACE_CDR::Char* gameName, *gameType;
+
+	//Make sure that our data contains a status
+	if (!(cdr >> status)) {
+		cout << "receiveNewCards:Received unexpected data from Server , :Error: "
+				<< errorMessage(STATUS_UNEXPECTED_DATA) << endl;
+		return -1;
+	}
+	//Make sure that the status is good
+	else if (((State) status) != STATUS_OK) {
+		cout << "receiveNewCards: Received error from Server"
+				<< ", Error: (" << status << ") "
+				<< errorMessage((State) status) << endl;
+		return -1;
+	}
+	//Make sure that our data contains the game name and (Lab2) gametype and num of new cards
+	else if (!(cdr >> gameType) || !(cdr >> gameName) || !(cdr >> newCards)) {
+		cout <<  "receiveNewCards:Received unexpected data from Server , :Error: "
+				<< errorMessage(STATUS_UNEXPECTED_DATA) << endl;
+		return -1;
+	}
+
+	vector<Card> discardedCards;
+
+	for (vector<card_bool_pair>::iterator it =theHand.getHandBoolPair()->begin();it != theHand.getHandBoolPair()->end(); ++it)
+	{
+		if (it->second)
+		{
+			discardedCards.push_back(it->first);
+		}
+	}
+
+	if(newCards!=discardedCards.size())
+	{
+		cout <<  "receiveNewCards:Received unexpected data from Server , :Error: "
+						<< errorMessage(STATUS_UNEXPECTED_DATA) << endl;
+		return -1;
+	}
+
+	cout << "Dealer: " << dealerName << " sent new cards for game: (" << gameName << ") of type : (" << gameType << ")" << endl;
+	copy(discardedCards.begin(),discardedCards.end(),ostream_iterator<Card>(cout," "));
+	cout << " cards were replaced with ";
+	//Update the new cards received from Dealer
+
+	for (vector<Card>::const_iterator it2 = discardedCards.begin(); it2 != discardedCards.end();++it2)
+	{
+		Card dCard = *it2;
+		Card nCard;
+		//Read in the card rank from data stream
+		if (!(cdr >> rank)) {
+			cout << "Error: printHand: Failed to read the card rank." << endl;
+			return -1;
+		}
+		//Read in the card suit from data stream
+		if (!(cdr >> suit)) {
+			cout << "Error: printHand: Failed to read the card suit." << endl;
+			return -1;
+		}
+		nCard.c_rank = (Rank) rank;
+		nCard.c_suit = (Suit) suit;
+		vector<card_bool_pair>::iterator itr = find_if(theHand.getHandBoolPair()->begin(),theHand.getHandBoolPair()->end(),isCard(dCard));
+		itr->first = nCard;
+		itr->second = false;
+		cout << nCard << " ";
+
+	}
+
+	cout << endl;
+
+	cout << "Dealer (" << dealerName << ") dealt new cards following for game (" << gameName << "): " << " of type (" << gameType << "): ";
+	cout << theHand << endl;
+
+
+	//Everything was done successfully , send score to dealer
+	return sendScore(gameType,gameName);
+
+
+}
+
+//Lab2 method to discard cards
+int  Player_Svc_Handler::discardCards(const ACE_TCHAR* gameType,const ACE_TCHAR* gameName)
+{
+	auto_discard(theHand);
+	// Build a data stream to send to the server with the score
+	ACE_OutputCDR ocdr(ACE_DEFAULT_CDR_BUFSIZE);
+	//Appropriate message identifier
+	ocdr << (ACE_CDR::ULong)CMD_DISCARD_CARDS;
+
+	vector<Card> discardedCards;
+
+	for(vector<card_bool_pair>::iterator it = theHand.getHandBoolPair()->begin(); it != theHand.getHandBoolPair()->end(); ++it)
+	{
+		if(it->second)
+		{
+			discardedCards.push_back(it->first);
+		}
+	}
+
+	//Add in the type of game , name of the game and number of cards discarded respectively
+	if(!(ocdr.write_string(gameType)) || !(ocdr.write_string(gameName)) || !(ocdr << discardedCards.size())){
+		cout << "Error: discardCards: Could not write the game type or game name or number of discarded cards." << endl;
+		return -1;
+	}
+
+	//send discarded cards to Dealer
+	for(unsigned int cardNum=0; cardNum<discardedCards.size(); ++cardNum)
+	{
+		ocdr << (ACE_CDR::Char)discardedCards[cardNum].c_rank;
+		ocdr << (ACE_CDR::Char)discardedCards[cardNum].c_suit;
+	}
+
+	if(writeToOutput(ocdr) == -1){
+		cout << "Error: discardCards: Could not write out the discarded cards to server." << endl;
+		return -1;
+	}
+	return 0;
+}

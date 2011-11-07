@@ -20,6 +20,7 @@
 //#include "PlayerConnection.h"
 #include "Const.h"
 #include "Codes.h"
+#include "Hand.h"
 using namespace std;
 
 class PlayerConnection;
@@ -27,10 +28,11 @@ class PlayerConnection;
 class Player_Svc_Handler : public ACE_Svc_Handler<ACE_SOCK_Stream,ACE_NULL_SYNCH>
 {
 public:
+
 	Player_Svc_Handler() {}
 	~Player_Svc_Handler() {}
 	//Lab2 - changed games to vector of gametype - game tuple
-	Player_Svc_Handler(const ACE_INET_Addr& addr,const ACE_TCHAR* inName,vector<gametype_game_pair> &inGames) : address(addr),pName(inName),games(inGames) { }
+	Player_Svc_Handler(const ACE_INET_Addr& addr,const ACE_TCHAR* inName,vector<gametype_game_pair> &inGames) : address(addr),pName(inName),games(inGames) { theHand.getHandBoolPair()->clear(); }
 	int handle_input( ACE_HANDLE=ACE_INVALID_HANDLE );
 	int handle_close( ACE_HANDLE=ACE_INVALID_HANDLE, ACE_Reactor_Mask=0 );
 
@@ -44,6 +46,12 @@ public:
 	typedef ACE_Svc_Handler<ACE_SOCK_Stream,ACE_NULL_SYNCH>	serviceBase;
 private:
 	int processRead(ACE_InputCDR &cdr);
+	//Lab2 method to send score to Dealer
+	int sendScore(const ACE_TCHAR* gameType,const ACE_TCHAR* gameName);
+	//Lab2 method to receive new cards
+	int receiveNewCards(ACE_InputCDR &cdr);
+	//Lab2 method to discard cards
+	int discardCards(const ACE_TCHAR* gameType,const ACE_TCHAR* gameName);
 	int printScore(ACE_InputCDR &cdr);
 
 	int playerEntry();
@@ -72,6 +80,8 @@ private:
 	//vector<const ACE_TCHAR*> games;
 	vector<gametype_game_pair> games;
 	PlayerConnection *pConn;
+	//Lab2 - include hand as member variable
+	Hand theHand;
 };
 
 

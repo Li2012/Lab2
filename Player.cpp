@@ -273,10 +273,13 @@ int Player::sendNewCards(ACE_InputCDR &cdr)
 			return respondMessageToClient(CMD_DISCARD_CARDS,STATUS_BAD_REQUEST);
 
 		//Read the discarded cards from the stream
+		cout << "Player (" << name << ") @ "<< toString(peerAddr)<<" has discarded following cards: ";
+
 		vector<CardPair> discardedCards;
 		for(unsigned int i = 0; i < numCards ; i++)
 		{
 			CardPair c;
+			Card c1;
 			//Read in the card rank from data stream
 			if(!(cdr >> rank))
 			{
@@ -291,13 +294,20 @@ int Player::sendNewCards(ACE_InputCDR &cdr)
 			}
 			c.first = (Rank)rank;
 			c.second = (Suit)suit;
+			//Lab2 - temporary solution , should look for another way to print this
+			c1.c_rank = (Rank)rank;
+			c1.c_suit = (Suit)suit;
+			cout << c1 << " ";
 			discardedCards.push_back(c);
 		}
-
+		cout << endl;
 		//Check if  size of vector is same numCards
 		//if not return error status
 		if(discardedCards.size()!=numCards)
 			return respondMessageToClient(CMD_DISCARD_CARDS,STATUS_BAD_REQUEST);
+
+
+
 
 		//Ask dealer to replace the cards sent by Player
 		return dealer->replaceCards(gameName,discardedCards,this);
