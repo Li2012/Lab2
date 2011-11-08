@@ -31,8 +31,6 @@ CardPair Deck::dealCard()
 		return *nextCard;
 	}
 	CardPair card = *nextCard;
-	//Lab2 - maintain the last dealed card in deck
-	lastDealedCard = nextCard;
 	++nextCard;
 	return card;
 }
@@ -47,8 +45,6 @@ void Deck::dealCard(Rank& rank, Suit& suit)
 	}
 	rank = nextCard->first;
 	suit = nextCard->second;
-	//Lab2 - maintain the last dealed card in deck
-	lastDealedCard = nextCard;
 	++nextCard;
 }
 
@@ -69,30 +65,18 @@ void Deck::print(ostream& os)
 
 }
 
-//Lab2 Method would first find the cards in the range of dealed
-//cards , then it swaps the cards with last dealed card on the deck,
-//reposition the nextCard iterator to appropriately point to beginning
-//of new set of cards added , shuffle
+//Lab2 - try to find the card in deck in range of dealed cards
+// if found erase it and push_back to the end of the cards vector ,
+// once all discarded cards are pushed , shuffle only the cards that
+// are not yet dealed to the PLayers
 void Deck::addCardsToDeck(vector<CardPair> c)
 {
 	if(c.size() == 0)
 		return;
+	vector<CardPair>::difference_type pos = nextCard - cards.begin();
 
 	for(unsigned int i = 0 ; i < c.size() ; i ++)
 	{
-		cards.push_back(c[i]);
-	}
-		//try to find the card in deck in range of dealed cards
-		/*cout << "Printing dealed cards" << endl;
-		for(vector<CardPair>::iterator iter = cards.begin(); iter!=nextCard; iter++)
-				cout << "[" << iter->second << " " << iter->first << "], ";
-			cout << endl;
-
-		cout << "Printing discarded cards" << endl;
-		for (vector<CardPair>::iterator iter2 = c.begin(); iter2 != c.end();
-				iter2++)
-			cout << "[" << iter2->second << " " << iter2->first << "], ";
-		cout << endl;
 
 		vector<CardPair>::iterator result = find(cards.begin(),nextCard,c[i]);
 		if(result == nextCard)
@@ -100,15 +84,20 @@ void Deck::addCardsToDeck(vector<CardPair> c)
 			Card tmp;
 			tmp.c_rank = c[i].first;
 			tmp.c_suit = c[i].second;
+			//Should not happen
 			cout << "Error - Could not find card " << tmp << " in deck of dealed cards" << endl;
+
 			return;
 		}
 
-		// if card is found then swap it was lastDealedCard
-		swap(result,lastDealedCard);
-		nextCard = lastDealedCard;
-		--lastDealedCard;
-	}*/
-	//shuffle
-	//random_shuffle(nextCard,cards.end());
+		// if card is found then erase and push_back
+		cards.erase(result);
+		cards.push_back(c[i]);
+		// reinitialize nextcard as push back might have invalidated the pointers
+		nextCard = cards.begin() + pos-1 - i ;
+
+	}
+	//Shuffle the deck of cards not dealed to Players yet
+	random_shuffle(nextCard,cards.end());
+
 }

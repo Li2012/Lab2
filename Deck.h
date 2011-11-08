@@ -29,8 +29,7 @@ public:
 private:
 	vector<CardPair> cards;
 	vector<CardPair>::iterator nextCard;
-	//Lab2- need iterators to point to end of dealed cards
-	vector<CardPair>::iterator lastDealedCard;
+
 };
 
 #endif
